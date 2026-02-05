@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+reports/*.md
+reports/*.html
+reports/latest.*
+logs/
+
+# Next.js
+web-next/node_modules/
+web-next/.next/
+web-next/out/
+web-next/.env*
+
+# OS
+.DS_Store

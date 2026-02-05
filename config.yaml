@@ -1,0 +1,49 @@
+timezone: "Asia/Tokyo"  # JST
+universe:
+  # Default to a local CSV for reliability.
+  # You can keep it as Nikkei225 by maintaining `universe.csv` with 225 codes.
+  kind: "csv"
+  path: "universe.csv"
+
+market:
+  currency: "JPY"
+  min_avg_value_traded_jpy: 50000000   # liquidity filter (avg close*volume)
+
+data:
+  provider: "stooq"  # free
+  lookback_days: 260  # ~1 trading year
+
+strategy:
+  top_n: 10
+  score_weights:
+    momentum_63d: 0.35
+    momentum_126d: 0.20
+    trend_ema: 0.25
+    volatility_penalty: 0.20
+  filters:
+    above_ema_50: false
+    above_ema_200: false
+    min_price_jpy: 200
+
+levels:
+  entry:
+    kind: "breakout"
+    breakout_lookback: 20
+    buffer_atr: 0.1
+  stop:
+    kind: "atr"
+    atr_period: 14
+    atr_mult: 2.5
+  take_profit:
+    kind: "rr"
+    rr: 2.0
+
+report:
+  out_dir: "reports"
+  include_charts: false
+
+ai:
+  enabled: false
+  provider: "openai"
+  model: "gpt-4.1-mini"
+  api_key_env: "OPENAI_API_KEY"
