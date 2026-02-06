@@ -33,21 +33,30 @@ function CardTab({
   title,
   desc,
   onClick,
+  theme,
 }: {
   active: boolean;
   title: string;
   desc: string;
   onClick: () => void;
+  theme: {
+    cardBorder: string;
+    tabActive: string;
+    tabIdle: string;
+    hoverBg: string;
+    shellText: string;
+    subText: string;
+  };
 }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border p-4 text-left transition hover:bg-zinc-800/40 ${
-        active ? "border-zinc-600 bg-zinc-900/60" : "border-zinc-800 bg-zinc-900/30"
-      }`}
+      className={`rounded-xl border p-4 text-left transition ${theme.hoverBg} ${
+        active ? theme.tabActive : theme.tabIdle
+      } ${theme.cardBorder}`}
     >
-      <div className="text-sm font-medium text-zinc-100">{title}</div>
-      <div className="mt-1 text-xs text-zinc-400">{desc}</div>
+      <div className={`text-sm font-medium ${theme.shellText}`}>{title}</div>
+      <div className={`mt-1 text-xs ${theme.subText}`}>{desc}</div>
     </button>
   );
 }
@@ -157,21 +166,49 @@ export default function Home() {
     return m ? m[1] : "日经筛选器";
   }, [md]);
 
+  const theme = einkMode
+    ? {
+        shellBg: "bg-white",
+        shellText: "text-zinc-900",
+        subText: "text-zinc-600",
+        cardBg: "bg-white",
+        cardBorder: "border-zinc-300",
+        softBg: "bg-zinc-50",
+        softBorder: "border-zinc-200",
+        hoverBg: "hover:bg-zinc-100",
+        tabActive: "border-zinc-500 bg-white",
+        tabIdle: "border-zinc-200 bg-white",
+        link: "text-zinc-700 hover:text-zinc-900",
+      }
+    : {
+        shellBg: "bg-zinc-950",
+        shellText: "text-zinc-50",
+        subText: "text-zinc-400",
+        cardBg: "bg-zinc-900/40",
+        cardBorder: "border-zinc-800",
+        softBg: "bg-zinc-950/20",
+        softBorder: "border-zinc-800",
+        hoverBg: "hover:bg-zinc-800/40",
+        tabActive: "border-zinc-600 bg-zinc-900/60",
+        tabIdle: "border-zinc-800 bg-zinc-900/30",
+        link: "text-zinc-400 hover:text-zinc-200",
+      };
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50">
+    <div className={`min-h-screen ${theme.shellBg} ${theme.shellText}`}>
       <div className="mx-auto max-w-6xl px-4 py-10">
         <header className="flex flex-col gap-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-              <p className="text-sm text-zinc-400">Dashboard：Top10 筛选 + 报告 / K线与预测 / 新闻</p>
+              <h1 className={`text-2xl font-semibold tracking-tight ${theme.shellText}`}>{title}</h1>
+              <p className={`text-sm ${theme.subText}`}>Dashboard：Top10 筛选 + 报告 / K线与预测 / 新闻</p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 className={`rounded-lg border px-2 py-1 text-xs transition ${
                   einkMode
-                    ? "border-zinc-500 bg-zinc-100 text-zinc-900"
+                    ? "border-zinc-500 bg-white text-zinc-900"
                     : "border-zinc-800 bg-zinc-900/40 text-zinc-200 hover:bg-zinc-800/40"
                 }`}
                 onClick={() => {
@@ -181,14 +218,16 @@ export default function Home() {
                     localStorage.setItem("einkMode", next ? "1" : "0");
                   } catch {}
                 }}
-                title="墨水屏阅读模式（报告 iframe 加白底/黑字/去色）"
+                title="墨水屏阅读模式（全站浅色主题 + 报告去色）"
               >
                 墨水屏
               </button>
 
-              <div className="text-xs text-zinc-400">报告日期</div>
+              <div className={`text-xs ${theme.subText}`}>报告日期</div>
               <select
-                className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-2 py-1 text-xs text-zinc-200"
+                className={`rounded-lg border px-2 py-1 text-xs ${
+                  einkMode ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-800 bg-zinc-900/40 text-zinc-200"
+                }`}
                 value={selectedDate}
                 onChange={async (e) => {
                   const d = e.target.value;
@@ -215,10 +254,10 @@ export default function Home() {
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left: picks (keep simple) */}
-          <aside className="lg:col-span-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <aside className={`lg:col-span-4 rounded-xl border p-4 ${theme.cardBorder} ${theme.cardBg}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-zinc-200">Top10（点击切换）</h2>
-              <a className="text-xs text-zinc-400 hover:text-zinc-200" href="/api/report/latest" target="_blank">
+              <h2 className={`text-sm font-medium ${theme.shellText}`}>Top10（点击切换）</h2>
+              <a className={`text-xs ${theme.link}`} href="/api/report/latest" target="_blank">
                 原始报告
               </a>
             </div>
@@ -228,53 +267,81 @@ export default function Home() {
                 <button
                   key={p.code}
                   onClick={() => setSelected(p)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left transition hover:bg-zinc-800/50 ${
-                    selected?.code === p.code ? "border-zinc-600 bg-zinc-800/60" : "border-zinc-800"
+                  className={`w-full rounded-lg border px-3 py-2 text-left transition ${theme.hoverBg} ${
+                    selected?.code === p.code
+                      ? einkMode
+                        ? "border-zinc-500 bg-zinc-50"
+                        : "border-zinc-600 bg-zinc-800/60"
+                      : theme.cardBorder
                   }`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <div className="font-medium">
-                      {p.rank}. {p.code} <span className="text-zinc-400">{p.name ?? ""}</span>
+                    <div className={`font-medium ${theme.shellText}`}>
+                      {p.rank}. {p.code} <span className={theme.subText}>{p.name ?? ""}</span>
                     </div>
-                    <div className="text-xs text-zinc-400">score {p.score?.toFixed(3) ?? "-"}</div>
+                    <div className={`text-xs ${theme.subText}`}>score {p.score?.toFixed(3) ?? "-"}</div>
                   </div>
                   <div className="mt-2">
                     <RiskRewardBar entry={p.entry} stop={p.stop} takeProfit={p.takeProfit} />
                   </div>
                 </button>
               ))}
-              {picks.length === 0 ? <div className="text-sm text-zinc-500">暂无 Top10（先生成一次日终报告）</div> : null}
+              {picks.length === 0 ? <div className={`text-sm ${theme.subText}`}>暂无 Top10（先生成一次日终报告）</div> : null}
             </div>
           </aside>
 
           {/* Right */}
           <main className="lg:col-span-8 space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-              <CardTab active={panel === "chart"} title="K线 + 预测" desc="同图叠加" onClick={() => setPanel("chart")} />
-              <CardTab active={panel === "news"} title="新闻" desc="公司名+代码匹配" onClick={() => setPanel("news")} />
-              <CardTab active={panel === "report"} title="报告" desc="文档化段落" onClick={() => setPanel("report")} />
-              <CardTab active={panel === "paper"} title="模拟盘" desc="T+1 每日再平衡" onClick={() => setPanel("paper")} />
+              <CardTab
+                active={panel === "chart"}
+                title="K线 + 预测"
+                desc="同图叠加"
+                onClick={() => setPanel("chart")}
+                theme={theme}
+              />
+              <CardTab
+                active={panel === "news"}
+                title="新闻"
+                desc="公司名+代码匹配"
+                onClick={() => setPanel("news")}
+                theme={theme}
+              />
+              <CardTab
+                active={panel === "report"}
+                title="报告"
+                desc="文档化段落"
+                onClick={() => setPanel("report")}
+                theme={theme}
+              />
+              <CardTab
+                active={panel === "paper"}
+                title="模拟盘"
+                desc="T+1 每日再平衡"
+                onClick={() => setPanel("paper")}
+                theme={theme}
+              />
             </div>
 
             {panel === "chart" ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <section className={`rounded-xl border p-4 ${theme.cardBorder} ${theme.cardBg}`}>
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <h2 className="text-sm font-medium text-zinc-200">K线 + 预测</h2>
-                    <p className="mt-1 text-xs text-zinc-400">
+                    <h2 className={`text-sm font-medium ${theme.shellText}`}>K线 + 预测</h2>
+                    <p className={`mt-1 text-xs ${theme.subText}`}>
                       {selected ? `${selected.code} ${selected.name ?? ""}` : "请选择一只股票"}
                       {forecastMethod ? ` · 预测方法：${forecastMethod}` : ""}
                     </p>
                   </div>
-                  <div className="text-xs text-zinc-400">蓝线=预测（未来10天）</div>
+                  <div className={`text-xs ${theme.subText}`}>蓝线=预测（未来10天）</div>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="text-xs text-zinc-400">显示价位横线（Entry/Stop/TP）</div>
-                  <label className="flex items-center gap-2 text-xs text-zinc-200">
+                  <div className={`text-xs ${theme.subText}`}>显示价位横线（Entry/Stop/TP）</div>
+                  <label className={`flex items-center gap-2 text-xs ${theme.shellText}`}>
                     <input
                       type="checkbox"
-                      className="h-4 w-4 accent-sky-400"
+                      className={`h-4 w-4 ${einkMode ? "accent-zinc-900" : "accent-sky-400"}`}
                       checked={showLevels}
                       onChange={(e) => setShowLevels(e.target.checked)}
                     />
@@ -289,15 +356,16 @@ export default function Home() {
                     entry={showLevels ? selected?.entry : undefined}
                     stop={showLevels ? selected?.stop : undefined}
                     takeProfit={showLevels ? selected?.takeProfit : undefined}
+                    theme={einkMode ? "eink" : "dark"}
                   />
                 </div>
               </section>
             ) : null}
 
             {panel === "news" ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-                <h2 className="text-sm font-medium text-zinc-200">相关新闻（最近）</h2>
-                <p className="mt-1 text-xs text-zinc-400">点击打开新闻源站。</p>
+              <section className={`rounded-xl border p-4 ${theme.cardBorder} ${theme.cardBg}`}>
+                <h2 className={`text-sm font-medium ${theme.shellText}`}>相关新闻（最近）</h2>
+                <p className={`mt-1 text-xs ${theme.subText}`}>点击打开新闻源站。</p>
 
                 <div className="mt-3 space-y-2">
                   {news.map((n) => (
@@ -306,26 +374,26 @@ export default function Home() {
                       href={n.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-lg border border-zinc-800 px-3 py-2 hover:bg-zinc-800/40"
+                      className={`block rounded-lg border px-3 py-2 ${theme.cardBorder} ${theme.hoverBg}`}
                     >
-                      <div className="text-sm text-zinc-100">{n.title}</div>
-                      <div className="mt-1 text-xs text-zinc-400">
+                      <div className={`text-sm ${theme.shellText}`}>{n.title}</div>
+                      <div className={`mt-1 text-xs ${theme.subText}`}>
                         {n.source ? `${n.source} · ` : ""}
                         {n.pubDate}
                       </div>
                     </a>
                   ))}
-                  {news.length === 0 ? <div className="text-sm text-zinc-500">暂无新闻或获取失败</div> : null}
+                  {news.length === 0 ? <div className={`text-sm ${theme.subText}`}>暂无新闻或获取失败</div> : null}
                 </div>
               </section>
             ) : null}
 
             {panel === "report" ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-                <h2 className="text-sm font-medium text-zinc-200">报告正文（HTML）</h2>
-                <p className="mt-1 text-xs text-zinc-400">报告由日终任务生成 HTML（更稳定的排版/颜色）。</p>
+              <section className={`rounded-xl border p-4 ${theme.cardBorder} ${theme.cardBg}`}>
+                <h2 className={`text-sm font-medium ${theme.shellText}`}>报告正文（HTML）</h2>
+                <p className={`mt-1 text-xs ${theme.subText}`}>报告由日终任务生成 HTML（更稳定的排版/颜色）。</p>
 
-                <div className="mt-3 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/30">
+                <div className={`mt-3 overflow-hidden rounded-lg border ${theme.softBorder} ${theme.softBg}`}>
                   <iframe
                     src={reportHtmlUrl}
                     className="h-[70vh] w-full"
@@ -337,15 +405,15 @@ export default function Home() {
             ) : null}
 
             {panel === "paper" ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-                <h2 className="text-sm font-medium text-zinc-200">模拟盘（Paper Trading）</h2>
-                <p className="mt-1 text-xs text-zinc-400">按你要求的布局：交易 / 账户 / 持仓 / 策略 / 设定。</p>
+              <section className={`rounded-xl border p-4 ${theme.cardBorder} ${theme.cardBg}`}>
+                <h2 className={`text-sm font-medium ${theme.shellText}`}>模拟盘（Paper Trading）</h2>
+                <p className={`mt-1 text-xs ${theme.subText}`}>按你要求的布局：交易 / 账户 / 持仓 / 策略 / 设定。</p>
 
                 {/* Row 1 */}
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                    <div className="text-xs font-medium text-zinc-200">当日交易</div>
-                    <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                  <div className={`rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                    <div className={`text-xs font-medium ${theme.shellText}`}>当日交易</div>
+                    <div className={`mt-2 space-y-1 text-xs ${theme.shellText}`}>
                       {(() => {
                         const all = ((paperSummary as any)?.trades as Record<string, string>[] | undefined) ?? [];
                         // "当日交易" = 最近一个交易日的全部交易（可能不止一笔）
@@ -354,55 +422,67 @@ export default function Home() {
                           (paperSummary as any)?.portfolio?.last_trade_date ||
                           (paperSummary as any)?.serverDateJst;
                         const rows = all.filter((t) => (t.date || "").trim() === String(latestDate).trim());
-                        if (!rows.length) return <div className="text-zinc-500">今天暂无交易（或还未运行 paper_trade.py）</div>;
+                        if (!rows.length) return <div className={theme.subText}>今天暂无交易（或还未运行 paper_trade.py）</div>;
                         return rows.slice(0, 12).map((t, i) => (
                           <div key={i} className="flex items-baseline justify-between gap-3">
-                            <div className="text-zinc-200">
+                            <div className={theme.shellText}>
                               {t.code}{" "}
                               <span
                                 className={
                                   t.side === "BUY"
-                                    ? "text-emerald-300"
+                                    ? einkMode
+                                      ? "text-zinc-900"
+                                      : "text-emerald-300"
                                     : t.side === "SELL"
-                                      ? "text-rose-300"
-                                      : "text-zinc-300"
+                                      ? einkMode
+                                        ? "text-zinc-700"
+                                        : "text-rose-300"
+                                      : einkMode
+                                        ? "text-zinc-700"
+                                        : "text-zinc-300"
                                 }
                               >
                                 {t.side}
                               </span>
                             </div>
-                            <div className="text-zinc-400">{t.qty} @ {t.price} ({t.reason})</div>
+                            <div className={theme.subText}>{t.qty} @ {t.price} ({t.reason})</div>
                           </div>
                         ));
                       })()}
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                    <div className="text-xs font-medium text-zinc-200">最近交易</div>
-                    <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                  <div className={`rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                    <div className={`text-xs font-medium ${theme.shellText}`}>最近交易</div>
+                    <div className={`mt-2 space-y-1 text-xs ${theme.shellText}`}>
                       {(paperSummary as any)?.trades && (paperSummary as any).trades.length > 0 ? (
                         (((paperSummary as any).trades as Record<string, string>[]).slice(0, 12) as Record<string, string>[]).map((t, i) => (
                           <div key={i} className="flex items-baseline justify-between gap-3">
-                            <div className="text-zinc-200">
+                            <div className={theme.shellText}>
                               {t.date} {t.code}{" "}
                               <span
                                 className={
                                   t.side === "BUY"
-                                    ? "text-emerald-300"
+                                    ? einkMode
+                                      ? "text-zinc-900"
+                                      : "text-emerald-300"
                                     : t.side === "SELL"
-                                      ? "text-rose-300"
-                                      : "text-zinc-300"
+                                      ? einkMode
+                                        ? "text-zinc-700"
+                                        : "text-rose-300"
+                                      : einkMode
+                                        ? "text-zinc-700"
+                                        : "text-zinc-300"
                                 }
                               >
                                 {t.side}
                               </span>
                             </div>
-                            <div className="text-zinc-400">{t.qty} @ {t.price}</div>
+                            <div className={theme.subText}>{t.qty} @ {t.price}</div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-zinc-500">暂无交易记录</div>
+                        <div className={theme.subText}>暂无交易记录</div>
                       )}
                     </div>
                   </div>
@@ -410,9 +490,9 @@ export default function Home() {
 
                 {/* Row 2 */}
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                    <div className="text-xs font-medium text-zinc-200">当前账户概况（含收益）</div>
-                    <div className="mt-2 text-xs text-zinc-300 space-y-1">
+                  <div className={`rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                    <div className={`text-xs font-medium ${theme.shellText}`}>当前账户概况（含收益）</div>
+                    <div className={`mt-2 text-xs ${theme.shellText} space-y-1`}>
                       {(() => {
                         const cash = (paperSummary as any)?.portfolio?.cash;
                         const eq = ((paperSummary as any)?.equity as Record<string, string>[] | undefined) ?? [];
@@ -437,35 +517,39 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                    <div className="text-xs font-medium text-zinc-200">持仓</div>
-                    <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                  <div className={`rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                    <div className={`text-xs font-medium ${theme.shellText}`}>持仓</div>
+                    <div className={`mt-2 space-y-1 text-xs ${theme.shellText}`}>
                       {(paperSummary as any)?.portfolio?.positions && Object.keys((paperSummary as any).portfolio.positions).length > 0 ? (
                         Object.entries((paperSummary as any).portfolio.positions as Record<string, any>).map(([code, pos]) => (
                           <div key={code} className="flex items-baseline justify-between">
                             <div>{code}</div>
-                            <div className="text-zinc-400">qty {pos.qty} · avg {Number(pos.avg_cost).toFixed(2)}</div>
+                            <div className={theme.subText}>qty {pos.qty} · avg {Number(pos.avg_cost).toFixed(2)}</div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-zinc-500">暂无持仓</div>
+                        <div className={theme.subText}>暂无持仓</div>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {/* Row 3 */}
-                <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                  <div className="text-xs font-medium text-zinc-200">交易策略</div>
-                  <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-zinc-300">{paperStrategy || "（未加载）"}</pre>
+                <div className={`mt-4 rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                  <div className={`text-xs font-medium ${theme.shellText}`}>交易策略</div>
+                  <pre className={`mt-2 whitespace-pre-wrap text-xs leading-relaxed ${theme.shellText}`}>{paperStrategy || "（未加载）"}</pre>
                 </div>
 
                 {/* Row 4 */}
-                <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/20 p-3">
-                  <div className="text-xs font-medium text-zinc-200">设定</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className={`mt-4 rounded-lg border p-3 ${theme.softBorder} ${theme.softBg}`}>
+                  <div className={`text-xs font-medium ${theme.shellText}`}>设定</div>
+                  <div className={`mt-2 flex flex-wrap items-center gap-2 ${theme.shellText}`}>
                     <button
-                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                      className={`rounded-lg border px-3 py-2 text-xs transition ${
+                        einkMode
+                          ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                      }`}
                       onClick={async () => {
                         if (!confirm("确认清零模拟盘？将把 paper/ 下文件移到 .trash（可恢复）。")) return;
                         const r = await fetch("/api/paper/reset", {
@@ -484,7 +568,11 @@ export default function Home() {
                     </button>
 
                     <button
-                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                      className={`rounded-lg border px-3 py-2 text-xs transition ${
+                        einkMode
+                          ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                      }`}
                       onClick={async () => {
                         const v = prompt("设置初始资金（JPY）", "1000000");
                         if (!v) return;
@@ -504,7 +592,11 @@ export default function Home() {
                     </button>
 
                     <button
-                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                      className={`rounded-lg border px-3 py-2 text-xs transition ${
+                        einkMode
+                          ? "border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                      }`}
                       onClick={async () => {
                         const v = prompt("设置 TopK（买入只数）", "5");
                         if (!v) return;
@@ -523,7 +615,7 @@ export default function Home() {
                       设定 TopK
                     </button>
 
-                    <div className="text-xs text-zinc-500">提示：初始资金变更只在清零后首次建仓时生效。</div>
+                    <div className={`text-xs ${theme.subText}`}>提示：初始资金变更只在清零后首次建仓时生效。</div>
                   </div>
                 </div>
               </section>
@@ -531,7 +623,7 @@ export default function Home() {
           </main>
         </div>
 
-        <footer className="mt-10 text-xs text-zinc-500">本地 Web App（WSL）。预测仅用于研究/演示，不构成投资建议。</footer>
+        <footer className={`mt-10 text-xs ${theme.subText}`}>本地 Web App（WSL）。预测仅用于研究/演示，不构成投资建议。</footer>
       </div>
     </div>
   );

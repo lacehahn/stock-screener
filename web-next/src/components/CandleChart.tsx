@@ -18,12 +18,14 @@ export default function CandleChart({
   entry,
   stop,
   takeProfit,
+  theme = "dark",
 }: {
   candles: Candle[];
   forecast: ForecastPoint[];
   entry?: number;
   stop?: number;
   takeProfit?: number;
+  theme?: "dark" | "eink";
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<any>(null);
@@ -31,31 +33,33 @@ export default function CandleChart({
   useEffect(() => {
     if (!ref.current) return;
 
+    const isEink = theme === "eink";
+
     const chart: any = createChart(ref.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0a0a0a" },
-        textColor: "#d4d4d8",
+        background: { type: ColorType.Solid, color: isEink ? "#ffffff" : "#0a0a0a" },
+        textColor: isEink ? "#111111" : "#d4d4d8",
       },
       grid: {
-        vertLines: { color: "#222" },
-        horzLines: { color: "#222" },
+        vertLines: { color: isEink ? "#dddddd" : "#222" },
+        horzLines: { color: isEink ? "#dddddd" : "#222" },
       },
-      timeScale: { borderColor: "#333" },
-      rightPriceScale: { borderColor: "#333" },
+      timeScale: { borderColor: isEink ? "#bbbbbb" : "#333" },
+      rightPriceScale: { borderColor: isEink ? "#bbbbbb" : "#333" },
       height: 320,
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#22c55e",
-      downColor: "#ef4444",
-      borderDownColor: "#ef4444",
-      borderUpColor: "#22c55e",
-      wickDownColor: "#ef4444",
-      wickUpColor: "#22c55e",
+      upColor: isEink ? "#111111" : "#22c55e",
+      downColor: isEink ? "#777777" : "#ef4444",
+      borderDownColor: isEink ? "#777777" : "#ef4444",
+      borderUpColor: isEink ? "#111111" : "#22c55e",
+      wickDownColor: isEink ? "#777777" : "#ef4444",
+      wickUpColor: isEink ? "#111111" : "#22c55e",
     });
 
     const lineSeries = chart.addSeries(LineSeries, {
-      color: "#60a5fa",
+      color: isEink ? "#111111" : "#60a5fa",
       lineWidth: 2,
     });
 
@@ -89,9 +93,9 @@ export default function CandleChart({
       }
     };
 
-    if (typeof entry === "number" && Number.isFinite(entry)) makeLine(entry, "Entry", "#38bdf8");
-    if (typeof stop === "number" && Number.isFinite(stop)) makeLine(stop, "Stop", "#f87171");
-    if (typeof takeProfit === "number" && Number.isFinite(takeProfit)) makeLine(takeProfit, "TP", "#34d399");
+    if (typeof entry === "number" && Number.isFinite(entry)) makeLine(entry, "Entry", isEink ? "#111111" : "#38bdf8");
+    if (typeof stop === "number" && Number.isFinite(stop)) makeLine(stop, "Stop", isEink ? "#777777" : "#f87171");
+    if (typeof takeProfit === "number" && Number.isFinite(takeProfit)) makeLine(takeProfit, "TP", isEink ? "#111111" : "#34d399");
 
     chart.timeScale().fitContent();
 
@@ -100,7 +104,7 @@ export default function CandleChart({
       chart.remove();
       chartRef.current = null;
     };
-  }, [candles, forecast]);
+  }, [candles, forecast, theme]);
 
   return <div ref={ref} className="w-full" />;
 }
