@@ -6,7 +6,7 @@ from pathlib import Path
 from .strategy import Pick
 
 
-def render_markdown(picks: list[Pick], asof: str) -> str:
+def render_markdown(picks: list[Pick], asof: str, *, ai_trade: dict | None = None) -> str:
     lines: list[str] = []
 
     lines.append(f"# 日经股票筛选报告（{asof}）")
@@ -27,15 +27,50 @@ def render_markdown(picks: list[Pick], asof: str) -> str:
         return "\n".join(lines)
 
     # --- Executive summary
-    lines.append("## 今日 Top10 概览")
+    lines.append("## 今日 Top10 概览（综合：动量/趋势/波动 + Brooks + AI）")
     lines.append("")
     lines.append("下面是 Top10 的**一行摘要**（便于快速扫一遍）：")
     lines.append("")
     for i, p in enumerate(picks, 1):
         name = f" {p.name}" if p.name else ""
+        ai_part = f"｜AI **{p.ai_score:.2f}**" if getattr(p, "ai_score", 0) else ""
+        br_part = f"｜Brooks **{p.brooks_score:.2f}**" if getattr(p, "brooks_score", 0) else ""
         lines.append(
-            f"{i}. **{p.code}**{name}｜Entry **{p.entry:.0f}**｜Stop **{p.stop:.0f}**｜TP **{p.take_profit:.0f}**｜Score **{p.score:.3f}**"
+            f"{i}. **{p.code}**{name}｜Entry **{p.entry:.0f}**｜Stop **{p.stop:.0f}**｜TP **{p.take_profit:.0f}**｜Score **{p.score:.3f}**{br_part}{ai_part}"
         )
+    lines.append("")
+
+    # --- AI trade review section (pre-market)
+    if ai_trade:
+        lines.append("## AI 交易复核（盘前 / 执行前）")
+        lines.append("")
+        codes = ai_trade.get("codes") or []
+        if codes:
+            lines.append("- AI 建议执行顺序：" + " → ".join([str(x) for x in codes]))
+        rat = ai_trade.get("rationale") or []
+        if rat:
+            lines.append("- 复核要点：")
+            for it in rat:
+                lines.append(f"  - {it}")
+        lines.append("")
+
+    # --- AI monitor section
+    has_ai = any(getattr(p, "ai_summary_zh", None) for p in picks)
+    if has_ai:
+        lines.append("## AI 盯盘摘要（盘后复核）")
+        lines.append("")
+        lines.append("下面是 AI 对 Top10 的盘后复核摘要（仅基于 OHLCV，不包含新闻）。")
+        lines.append("")
+        for i, p in enumerate(picks, 1):
+            if getattr(p, "ai_summary_zh", None):
+                lines.append(f"- **{p.code}**｜AI **{p.ai_score:.2f}**：{p.ai_summary_zh}")
+        lines.append("")
+
+    # --- Brooks section
+    lines.append("## Brooks 小结（规则 + AI）")
+    lines.append("")
+    lines.append("- 规则 Brooks（proxy）用于提供可计算的价格行为上下文近似。")
+    lines.append("- AI Brooks 用于对候选标的做更接近“读盘”的解释与复核（仅基于 OHLCV，不包含新闻）。")
     lines.append("")
 
     # --- Details
@@ -65,6 +100,16 @@ def render_markdown(picks: list[Pick], asof: str) -> str:
         vol_s = _tr(vol[0]) if vol else "波动：—"
         lines.append(f"**一句话结论：** {mom_s}；{trend_s}；{vol_s}。")
         lines.append("")
+
+        # AI解读
+        if getattr(p, "ai_summary_zh", None):
+            lines.append("**AI 解读（Brooks 视角）**")
+            lines.append("")
+            lines.append(f"> {p.ai_summary_zh}")
+            if getattr(p, "ai_setup_tags", None):
+                lines.append("")
+                lines.append("- setup_tags：" + "、".join([str(x) for x in (p.ai_setup_tags or [])]))
+            lines.append("")
 
         # Key numbers as a small table
         lines.append("| 指标 | 数值 |")

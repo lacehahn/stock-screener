@@ -6,18 +6,28 @@ import numpy as np
 import pandas as pd
 
 from .indicators import atr, ema, pct_change_n, rolling_max
+from .brooks_pa import brooks_proxy_score
 
 
 @dataclass
 class Pick:
     code: str
     name: str | None
-    score: float
+    score: float  # final score used for ranking
     close: float
     entry: float
     stop: float
     take_profit: float
     reasons: list[str]
+
+    # Additional signals
+    base_score: float = 0.0
+    brooks_score: float = 0.0
+    brooks_tags: list[str] | None = None
+    ai_score: float = 0.0
+    ai_summary_zh: str | None = None
+    ai_context: str | None = None
+    ai_setup_tags: list[str] | None = None
 
 
 def compute_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -103,6 +113,11 @@ def pick_top10(
     filt = cfg["strategy"]["filters"]
     levels_cfg = cfg["levels"]
 
+    brooks_cfg = cfg.get("brooks", {})
+    brooks_enabled = bool(brooks_cfg.get("enabled", True))
+    brooks_weight = float(brooks_cfg.get("weight", 0.35))
+    base_weight = max(0.0, 1.0 - brooks_weight)
+
     min_value = float(cfg["market"].get("min_avg_value_traded_jpy", 0))
     min_price = float(filt.get("min_price_jpy", 0))
 
@@ -127,19 +142,30 @@ def pick_top10(
         if filt.get("above_ema_200", False) and not (float(last["close"]) > float(last["ema200"])):
             continue
 
-        score, reasons = score_latest(fdf, w)
+        base_score, reasons = score_latest(fdf, w)
         entry, stop, tp = propose_levels(fdf, levels_cfg)
+
+        brooks_score = 0.0
+        brooks_tags: list[str] | None = None
+        if brooks_enabled:
+            brooks_score, brooks_tags = brooks_proxy_score(df)
+            reasons.append(f"Brooks proxy score {brooks_score:.2f}")
+
+        final_score = base_weight * float(base_score) + brooks_weight * float(brooks_score)
 
         picks.append(
             Pick(
                 code=t.code,
                 name=getattr(t, "name", None),
-                score=float(score),
+                score=float(final_score),
                 close=float(last["close"]),
                 entry=entry,
                 stop=stop,
                 take_profit=tp,
                 reasons=reasons,
+                base_score=float(base_score),
+                brooks_score=float(brooks_score),
+                brooks_tags=brooks_tags,
             )
         )
 

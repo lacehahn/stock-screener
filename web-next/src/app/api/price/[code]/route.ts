@@ -1,9 +1,36 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 
-function toStooqSymbol(code: string) {
-  return `${code}.jp`;
+function rootDir() {
+  // web-next -> project root
+  return path.resolve(process.cwd(), "..");
+}
+
+function cachePathForCode(code: string) {
+  // Python cache: data_cache/{symbol}.csv, symbol is like "1332.jp"
+  const sym = `${code}.jp`;
+  return path.join(rootDir(), "data_cache", `${sym}.csv`);
+}
+
+function dummySeries(code: string) {
+  const today = new Date();
+  const series: { date: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
+  let close = 1200 + (Number(code) % 500);
+  for (let i = 220; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    const open = close;
+    close = close * (1 + 0.0005) * (1 + (((i % 10) - 5) * 0.001));
+    const high = Math.max(open, close) * 1.01;
+    const low = Math.min(open, close) * 0.99;
+    const volume = 1_500_000;
+    series.push({ date, open, high, low, close, volume });
+  }
+  return series;
 }
 
 export async function GET(_: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -12,22 +39,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ code: stri
     return NextResponse.json({ ok: false, error: "invalid code" }, { status: 400 });
   }
 
-  const sym = toStooqSymbol(code);
-  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(sym)}&i=d`;
-
-  // Use AbortController for a longer timeout than default.
-  const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), 25000);
-  const r = await fetch(url, {
-    signal: ac.signal,
-    next: { revalidate: 3600 },
-  }).finally(() => clearTimeout(t));
-  if (!r.ok) {
-    return NextResponse.json({ ok: false, error: `stooq error ${r.status}` }, { status: 502 });
+  const p = cachePathForCode(code);
+  if (!fs.existsSync(p)) {
+    // No network access here: local-only mode.
+    // Provide dummy series so UI remains usable.
+    return NextResponse.json({ ok: true, code, series: dummySeries(code), dummy: true, source: "dummy" });
   }
-  const text = await r.text();
+
+  const text = fs.readFileSync(p, "utf-8");
   const lines = text.trim().split(/\r?\n/);
-  // header: Date,Open,High,Low,Close,Volume
+
   const out: { date: string; open: number; high: number; low: number; close: number; volume: number }[] = [];
   for (let i = 1; i < lines.length; i++) {
     const parts = lines[i].split(",");
@@ -44,5 +65,5 @@ export async function GET(_: Request, { params }: { params: Promise<{ code: stri
   }
 
   const series = out.slice(-200);
-  return NextResponse.json({ ok: true, code, series });
+  return NextResponse.json({ ok: true, code, series, source: "cache" });
 }

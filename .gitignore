@@ -6,6 +6,16 @@ reports/*.html
 reports/latest.*
 logs/
 
+# Secrets
+.env
+
+# Local data/cache
+data_cache/
+data_cache_yahoo/
+data_cache_daily/
+paper/
+.trash/
+
 # Next.js
 web-next/node_modules/
 web-next/.next/
