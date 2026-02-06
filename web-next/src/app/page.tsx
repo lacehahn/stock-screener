@@ -54,6 +54,8 @@ function CardTab({
 
 export default function Home() {
   const [md, setMd] = useState<string>("");
+
+  const [einkMode, setEinkMode] = useState<boolean>(false);
   const [reportHtmlUrl, setReportHtmlUrl] = useState<string>("/api/report/latest.html");
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -71,7 +73,17 @@ export default function Home() {
   const [forecastMethod, setForecastMethod] = useState<string>("");
   const [showLevels, setShowLevels] = useState<boolean>(true);
 
+  const withEink = (url: string) => {
+    if (!einkMode) return url;
+    return url.includes("?") ? `${url}&mode=eink` : `${url}?mode=eink`;
+  };
+
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("einkMode");
+      if (saved === "1") setEinkMode(true);
+    } catch {}
+
     (async () => {
       const r = await fetch("/api/report/latest");
       const j = await r.json();
@@ -92,7 +104,9 @@ export default function Home() {
         setAvailableDates(j.dates ?? []);
         if ((j.dates ?? []).length > 0) {
           setSelectedDate(j.dates[0]);
-          setReportHtmlUrl(`/api/report/html/${j.dates[0]}`);
+          setReportHtmlUrl(withEink(`/api/report/html/${j.dates[0]}`));
+        } else {
+          setReportHtmlUrl(withEink("/api/report/latest.html"));
         }
       }
     })();
@@ -107,6 +121,13 @@ export default function Home() {
       if (j.ok) setPaperSummary(j);
     })();
   }, []);
+
+  useEffect(() => {
+    // keep report iframe in sync with eink toggle
+    if (selectedDate) setReportHtmlUrl(withEink(`/api/report/html/${selectedDate}`));
+    else setReportHtmlUrl(withEink("/api/report/latest.html"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [einkMode]);
 
   useEffect(() => {
     if (!selected) return;
@@ -147,6 +168,24 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                className={`rounded-lg border px-2 py-1 text-xs transition ${
+                  einkMode
+                    ? "border-zinc-500 bg-zinc-100 text-zinc-900"
+                    : "border-zinc-800 bg-zinc-900/40 text-zinc-200 hover:bg-zinc-800/40"
+                }`}
+                onClick={() => {
+                  const next = !einkMode;
+                  setEinkMode(next);
+                  try {
+                    localStorage.setItem("einkMode", next ? "1" : "0");
+                  } catch {}
+                }}
+                title="墨水屏阅读模式（报告 iframe 加白底/黑字/去色）"
+              >
+                墨水屏
+              </button>
+
               <div className="text-xs text-zinc-400">报告日期</div>
               <select
                 className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-2 py-1 text-xs text-zinc-200"
@@ -154,7 +193,7 @@ export default function Home() {
                 onChange={async (e) => {
                   const d = e.target.value;
                   setSelectedDate(d);
-                  setReportHtmlUrl(`/api/report/html/${d}`);
+                  setReportHtmlUrl(withEink(`/api/report/html/${d}`));
                   const r = await fetch(`/api/report/picks/${d}`);
                   const j = await r.json();
                   if (j.ok) {
